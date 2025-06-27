@@ -1,0 +1,116 @@
+{
+ "cells": [
+  {
+   "cell_type": "markdown",
+   "id": "10e0073b-6475-40fb-ad06-2ae8fd4ff81e",
+   "metadata": {},
+   "source": [
+    "# Sampling Functions"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 2,
+   "id": "71b133b8-e76d-4d29-8771-406b031b1f88",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "rflip <- function(n=1, prob=.5, quiet=FALSE, verbose = !quiet, summarize = FALSE, \n",
+    "                  summarise = summarize) {\n",
+    "\tif ( ( prob > 1 && is.integer(prob) ) ) {  \n",
+    "\t\t# swap n and prob\n",
+    "\t\ttemp <- prob\n",
+    "\t\tprob <- n\n",
+    "\t\tn <- temp\n",
+    "\t}\n",
+    "\tif (summarise) {\n",
+    "\t  heads <- rbinom(1, n, prob)\n",
+    "\t  return(data.frame(n = n, heads = heads, tails = n - heads, prob = prob))\n",
+    "\t} else {\n",
+    "\t  r <- rbinom(n,1,prob)\n",
+    "\t  result <- c('T','H')[ 1 + r ]\n",
+    "\t  heads <- sum(r)\n",
+    "\t  attr(heads,\"n\") <- n\n",
+    "\t  attr(heads,\"prob\") <- prob \n",
+    "\t  attr(heads,\"sequence\") <- result\n",
+    "\t  attr(heads,\"verbose\") <- verbose\n",
+    "\t  class(heads) <- 'cointoss'\n",
+    "\t  return(heads)\n",
+    "\t}\n",
+    "}"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 3,
+   "id": "9a50ed01-bbe0-4fb3-9f47-a712ab786741",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "rspin <- function(n, probs, labels=1:length(probs)) {\n",
+    "  if (any(probs < 0))\n",
+    "    stop(\"All probs must be non-negative.\")\n",
+    "  \n",
+    "  probs <- probs/sum(probs)\n",
+    "  res <- as.data.frame(t(rmultinom(1, n, probs)))\n",
+    "  names(res) <- labels\n",
+    "  res\n",
+    "}"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 4,
+   "id": "c3cd5b1a-b4bf-491c-b3d8-997a659e0532",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "sample.data.frame <- function(x, size, replace = FALSE, prob = NULL, groups=NULL, \n",
+    "                              orig.ids = TRUE, fixed = names(x), shuffled = c(),\n",
+    "                              invisibly.return = NULL, ...) {\n",
+    "  if( missing(size) ) size = nrow(x)\n",
+    "  if( is.null(invisibly.return) ) invisibly.return = size>50 \n",
+    "  shuffled <- intersect(shuffled, names(x))\n",
+    "  fixed <- setdiff(intersect(fixed, names(x)), shuffled)\n",
+    "  n <- nrow(x)\n",
+    "  ids <- 1:n\n",
+    "  groups <- eval( substitute(groups), x )\n",
+    "  newids <- sample(n, size, replace=replace, prob=prob, ...)\n",
+    "  origids <- ids[newids]\n",
+    "  result <- x[newids, , drop=FALSE]\n",
+    "  \n",
+    "  idsString <- as.character(origids)\n",
+    "  \n",
+    "  for (column in shuffled) {\n",
+    "    cids <- sample(newids, groups=groups[newids])\n",
+    "    result[,column] <- x[cids,column]\n",
+    "    idsString <- paste(idsString, \".\", cids, sep=\"\")\n",
+    "  }\n",
+    "  \n",
+    "  result <-  result[ , union(fixed,shuffled), drop=FALSE]\n",
+    "  if (orig.ids) result$orig.id <- idsString\n",
+    "  \n",
+    "  \n",
+    "  if (invisibly.return) { return(invisible(result)) } else {return(result)}\n",
+    "}"
+   ]
+  }
+ ],
+ "metadata": {
+  "kernelspec": {
+   "display_name": "R",
+   "language": "R",
+   "name": "ir"
+  },
+  "language_info": {
+   "codemirror_mode": "r",
+   "file_extension": ".r",
+   "mimetype": "text/x-r-source",
+   "name": "R",
+   "pygments_lexer": "r",
+   "version": "3.6.1"
+  }
+ },
+ "nbformat": 4,
+ "nbformat_minor": 5
+}
